@@ -1,7 +1,7 @@
 {
   "name": "fetch-observable",
   "description": "Observable-based Fetch API",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -15,10 +15,9 @@
   ],
   "main": "dist/lib/fetch-observable.js",
   "scripts": {
-    "localhost": "sleep 3; which open && open http://localhost:8080",
-    "build": "webpack --verbose --colors --display-error-details --config webpack.client.js",
+    "build": "webpack --verbose --colors --display-error-details --config webpack.umd.js",
     "watch-client": "webpack --verbose --colors --display-error-details --config webpack.client-watch.js && webpack-dev-server --config webpack.client-watch.js",
-    "watch": "concurrent --kill-others 'npm run watch-client' 'npm run localhost'"
+    "watch": "concurrent --kill-others 'npm run watch-client'"
   },
   "dependencies": {
   },
@@ -31,6 +30,8 @@
     "concurrently": "0.1.1",
     "isomorphic-fetch": "2.2.0",
     "json-loader": "0.5.3",
+    "react": "0.14.2",
+    "react-dom": "0.14.2",
     "webpack": "1.12.2",
     "webpack-dev-server": "1.12.1"
   },
