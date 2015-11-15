@@ -21,9 +21,10 @@ import fetchObservable from "fetch-observable";
 
 // Creates a single observable for one or multiple URLs.
 const liveFeed = fetchObservable(
-	"http://example.org/live-feed.json",
+	"http://example.org/live-feed.json", // <-- URL or array of URLs.
 	{
-		refreshDelay: (iteration) => iteration * 1000 // <-- Callback or just integer ms.
+		refreshDelay: (iteration) => iteration * 1000, // <-- Callback or just integer ms.
+		method: "POST" // <-- Basic Fetch API options.
 	}
 );
 

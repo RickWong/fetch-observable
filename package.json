@@ -1,7 +1,7 @@
 {
   "name": "fetch-observable",
   "description": "Observable-based Fetch API",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
     "observable",
     "promise"
   ],
-  "main": "dist/lib/fetch-observable.js",
+  "main": "dist/lib/fetchobservable.js",
   "scripts": {
     "build": "concurrent --kill-others 'npm run build-full' 'npm run build-min'",
     "build-full": "webpack --verbose --colors --display-error-details --config webpack.umd.js src/lib/fetchObservable.js dist/lib/fetchObservable.js",
