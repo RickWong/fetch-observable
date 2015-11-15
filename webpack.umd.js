@@ -4,13 +4,7 @@ var path    = require("path");
 module.exports = {
 	cache:   false,
 	context: __dirname,
-	devtool: false,
-	entry: {
-		"fetchObservable": "./src/lib/fetchObservable.js"
-	},
 	output:  {
-		path:          path.join(__dirname, "dist/lib"),
-		filename:      "[name].js",
 		library:       "fetchObservable",
 		libraryTarget: "umd"
 	},

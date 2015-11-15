@@ -7,7 +7,6 @@ module.exports = {
 	context: __dirname,
 	devtool: false,
 	entry:   {
-		// "fetch-observable": "./src/lib/fetch-observable",
 		"example": "./src/example"
 	},
 	output:  {

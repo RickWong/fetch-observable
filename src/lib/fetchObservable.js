@@ -1,40 +1,97 @@
-import {Observable} from "lib/Observable";
+import __fetch from "isomorphic-fetch";
+import PausableObservable from "lib/PausableObservable";
 
-export default (target, options = {}) => {
-	const {
-		configInterval = 1000
-	} = options;
+function isString (thing) {
+	return typeof thing === "string";
+}
 
-	options = Object.assign({}, options, {
-		interval: undefined
-	});
+function isFunction (thing) {
+	return typeof thing === "function";
+}
 
-	return new Observable((subscriber) => {
-		let refInterval = null;
+/**
+ * Calls the Fetch API and returns an Observable.
+ *
+ * @param {string|string[]} urls  URL or URLs array.
+ * @param {object} options
+ * @returns {PausableObservable|Observable}
+ */
+function fetchObservable (urls, options = {}) {
+	const {refreshDelay = false} = options;
 
-		const tick = () => {
-			fetch(target, options).then((...args) => {
-				if (subscriber._observer) {
-					subscriber.next(...args);
-				}
-			});
-		};
+	let subscribers  = [];
+	let timeout      = null;
+	let singleResult = false;
 
-		tick();
+	if (singleResult = isString(urls)) {
+		urls = [urls];
+	}
 
-		if (configInterval) {
-			refInterval = setInterval(tick, configInterval);
+	const performFetch = function () {
+		// Don't do anything if there are no subscribers.
+		if (subscribers.length === 0 ||
+		    observable.paused()) {
+			return;
 		}
 
-		return () => {
-			if (refInterval) {
-				clearInterval(refInterval);
-				refInterval = null;
+		const _finally = function () {
+			// If refreshing is disabled, complete subscribers and pause observable.
+			if (!refreshDelay) {
+				observable.pause();
+				subscribers.map(subscriber => subscriber.complete());
+				subscribers = [];
 			}
-
-			if (subscriber._observer) {
-				subscriber.complete();
+			// If refreshing is enabled, set a timeout.
+			else {
+				timeout = setTimeout(
+					performFetch,
+					isFunction(refreshDelay) ? refreshDelay() : refreshDelay
+				);
 			}
 		};
-	})
+
+		let fetches = urls.map(url => fetch(url, options));
+
+		Promise.all(fetches).then(function (results) {
+			subscribers.map(subscriber => subscriber.next(singleResult ? results[0] : results));
+			_finally();
+		}).catch(function (results) {
+			subscribers.map(subscriber => subscriber.error(singleResult ? results[0] : results));
+			_finally();
+		});
+	};
+
+	const observable = new PausableObservable(function (subscriber) {
+		subscribers.push(subscriber);
+
+		if (subscribers.length) {
+			observable.resume();
+		}
+
+		return function () {
+			subscribers.splice(subscribers.indexOf(subscriber), 1);
+
+			if (!subscribers.length) {
+				observable.pause();
+			}
+		};
+	}, {
+		onPause () {
+			if (timeout) {
+				clearTimeout(timeout);
+				timeout = null;
+			}
+		},
+		onResume () {
+			if (!timeout) {
+				performFetch();
+			}
+		}
+	});
+
+	observable.resume();
+
+	return observable;
 }
+
+export default fetchObservable;
