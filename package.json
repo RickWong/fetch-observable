@@ -1,7 +1,7 @@
 {
   "name": "fetch-observable",
   "description": "Observable-based Fetch API",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -22,7 +22,6 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "isomorphic-fetch": "2.2.0"
   },
   "devDependencies": {
     "babel": "6.1.18",
@@ -31,6 +30,7 @@
     "babel-preset-es2015": "6.1.18",
     "babel-preset-react": "6.1.18",
     "concurrently": "0.1.1",
+    "isomorphic-fetch": "2.2.0",
     "json-loader": "0.5.3",
     "react": "0.14.2",
     "react-dom": "0.14.2",

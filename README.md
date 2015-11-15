@@ -6,7 +6,7 @@ Observable-based [Fetch API](https://github.com/whatwg/fetch) that automatically
 
 - Uses the standard Fetch API.
 - Uses Observable syntax from [ES Observable proposal](https://github.com/zenparsing/es-observable).
-- Runs in Node and browsers. (BYO Promises though)
+- Runs in Node and browsers. (BYO Fetch API and Promises polyfills though)
 
 ## Installation
 
