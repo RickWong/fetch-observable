@@ -19,6 +19,9 @@ function toggleFetching (index) {
 	if (subscriptions[index] && subscriptions[index].active()) {
 		subscriptions[index].unsubscribe();
 	}
+	else if (subscriptions[index]) {
+		subscriptions[index].resubscribe();
+	}
 	else {
 		subscriptions[index] = observable.subscribe({
 			next: (...args) => {console.log(`subscriptions[${index}] next:`, ...args);},

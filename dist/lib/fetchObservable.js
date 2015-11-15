@@ -114,10 +114,12 @@ return /******/ (function(modules) { // webpackBootstrap
 					}
 			};
 
+			// Map all URLs to Fetch API calls.
 			var fetches = urls.map(function (url) {
 				return fetch(url, options);
 			});
 
+			// Wait for all the results to come in, then notify subscribers.
 			Promise.all(fetches).then(function (results) {
 				subscribers.map(function (subscriber) {
 					return subscriber.next(singleResult ? results[0] : results);
@@ -133,10 +135,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 		var observable = new _PausableObservable2.default(function (subscriber) {
 			subscribers.push(subscriber);
-
-			if (subscribers.length) {
-				observable.resume();
-			}
+			observable.resume();
 
 			return function () {
 				subscribers.splice(subscribers.indexOf(subscriber), 1);
@@ -158,8 +157,6 @@ return /******/ (function(modules) { // webpackBootstrap
 				}
 			}
 		});
-
-		observable.resume();
 
 		return observable;
 	}
@@ -796,18 +793,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	    * Add method to know if the subscription is active.
 	    */
 				subscription.active = function () {
-					return this._observer !== undefined && !_this.paused();
-				};
-
-				/**
-	    * Add method that re-activates this observable.
-	    */
-				subscription.resubscribe = function () {
-					if (this.active()) {
+					if (_this.paused()) {
 						return false;
 					}
 
-					return _this.subscribe(observer);
+					if (this._observer === undefined) {
+						return false;
+					}
+
+					if (this._observer._observer === undefined) {
+						return false;
+					}
+
+					return true;
+				};
+
+				/**
+	    * Add method that re-activates the subscription.
+	    */
+				subscription.resubscribe = function () {
+					if (this.active()) {
+						return;
+					}
+
+					Object.assign(this, _this.subscribe(observer));
 				};
 
 				return subscription;

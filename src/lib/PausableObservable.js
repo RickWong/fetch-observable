@@ -46,18 +46,30 @@ class PausableObservable extends Observable {
 		 * Add method to know if the subscription is active.
 		 */
 		subscription.active = function () {
-			return this._observer !== undefined && !_this.paused();
-		};
-
-		/**
-		 * Add method that re-activates this observable.
-		 */
-		subscription.resubscribe = function () {
-			if (this.active()) {
+			if (_this.paused()) {
 				return false;
 			}
 
-			return _this.subscribe(observer);
+			if (this._observer === undefined) {
+				return false;
+			}
+
+			if (this._observer._observer === undefined) {
+				return false;
+			}
+
+			return true;
+		};
+
+		/**
+		 * Add method that re-activates the subscription.
+		 */
+		subscription.resubscribe = function () {
+			if (this.active()) {
+				return;
+			}
+
+			Object.assign(this, _this.subscribe(observer));
 		};
 
 		return subscription;

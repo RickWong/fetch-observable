@@ -53,8 +53,10 @@ function fetchObservable (urls, options = {}) {
 			}
 		};
 
+		// Map all URLs to Fetch API calls.
 		let fetches = urls.map(url => fetch(url, options));
 
+		// Wait for all the results to come in, then notify subscribers.
 		Promise.all(fetches).then(function (results) {
 			subscribers.map(subscriber => subscriber.next(singleResult ? results[0] : results));
 			_finally();
@@ -66,10 +68,7 @@ function fetchObservable (urls, options = {}) {
 
 	const observable = new PausableObservable(function (subscriber) {
 		subscribers.push(subscriber);
-
-		if (subscribers.length) {
-			observable.resume();
-		}
+		observable.resume();
 
 		return function () {
 			subscribers.splice(subscribers.indexOf(subscriber), 1);
@@ -91,8 +90,6 @@ function fetchObservable (urls, options = {}) {
 			}
 		}
 	});
-
-	observable.resume();
 
 	return observable;
 }
