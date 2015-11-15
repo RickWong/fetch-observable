@@ -56,10 +56,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-
 	var _PausableObservable = __webpack_require__(2);
 
 	var _PausableObservable2 = _interopRequireDefault(_PausableObservable);
@@ -168,7 +164,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		return observable;
 	}
 
-	exports.default = fetchObservable;
+	module.exports = fetchObservable;
 
 /***/ },
 /* 1 */

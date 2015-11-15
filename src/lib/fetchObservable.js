@@ -97,4 +97,4 @@ function fetchObservable (urls, options = {}) {
 	return observable;
 }
 
-export default fetchObservable;
+module.exports = fetchObservable;

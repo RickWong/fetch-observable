@@ -16,9 +16,8 @@ let observable = fetchObservable(
 let subscriptions = {};
 
 function toggleFetching (index) {
-	if (subscriptions[index]) {
+	if (subscriptions[index] && subscriptions[index].active()) {
 		subscriptions[index].unsubscribe();
-		subscriptions[index].resubscribe();
 	}
 	else {
 		subscriptions[index] = observable.subscribe({
