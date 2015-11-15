@@ -1,3 +1,6 @@
+/**
+ * @copyright © 2015, Rick Wong. All rights reserved.
+ */
 import __fetch from "isomorphic-fetch";
 import PausableObservable from "lib/PausableObservable";
 

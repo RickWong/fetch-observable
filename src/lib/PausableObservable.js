@@ -1,3 +1,6 @@
+/**
+ * @copyright © 2015, Rick Wong. All rights reserved.
+ */
 import {Observable} from "lib/Observable";
 
 /**

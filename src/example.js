@@ -1,4 +1,6 @@
-
+/**
+ * @copyright © 2015, Rick Wong. All rights reserved.
+ */
 import fetchObservable from "lib/fetchObservable";
 import React from "react";
 import ReactDOM from "react-dom";
