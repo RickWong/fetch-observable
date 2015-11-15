@@ -172,24 +172,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {"use strict";
 
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	exports.Observable = Observable;
 
 	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 	/**
-	 * Observable.js from zenparsing/es-observable.
+	 * Observable.js from zenparsing/zen-observable
 	 *
 	 * @copyright © zenparsing
-	 * @homepage https://github.com/zenparsing/es-observable
-	 * @file https://github.com/zenparsing/es-observable/blob/bed0248bf84818bbda26c051f156e51ab9f7671e/src/Observable.js
+	 * @homepage https://github.com/zenparsing/zen-observable
+	 * @file https://github.com/zenparsing/zen-observable/blob/de80d63fb166421226bb3c918b111cac40bd672a/src/Observable.js
 	 */
-
 	// === Non-Promise Job Queueing ===
 
 	var enqueueJob = (function () {
@@ -250,21 +246,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function polyfillSymbol(name) {
 
-		if (!Symbol[name]) Object.defineProperty(Symbol, name, { value: Symbol(name) });
+		if (symbolsSupported() && !Symbol[name]) Object.defineProperty(Symbol, name, { value: Symbol(name) });
+	}
+
+	function symbolsSupported() {
+
+		return typeof Symbol === "function";
+	}
+
+	function hasSymbol(name) {
+
+		return symbolsSupported() && Boolean(Symbol[name]);
+	}
+
+	function getSymbol(name) {
+
+		return hasSymbol(name) ? Symbol[name] : "@@" + name;
 	}
 
 	polyfillSymbol("observable");
 
 	// === Abstract Operations ===
-
-	function nonEnum(obj) {
-
-		Object.getOwnPropertyNames(obj).forEach(function (k) {
-			Object.defineProperty(obj, k, { enumerable: false });
-		});
-
-		return obj;
-	}
 
 	function getMethod(obj, key) {
 
@@ -275,6 +277,22 @@ return /******/ (function(modules) { // webpackBootstrap
 		if (typeof value !== "function") throw new TypeError(value + " is not a function");
 
 		return value;
+	}
+
+	function getSpecies(ctor) {
+
+		var symbol = getSymbol("species");
+		return symbol ? ctor[symbol] : ctor;
+	}
+
+	function addMethods(target, methods) {
+
+		Object.keys(methods).forEach(function (k) {
+
+			var desc = Object.getOwnPropertyDescriptor(methods, k);
+			desc.enumerable = false;
+			Object.defineProperty(target, k, desc);
+		});
 	}
 
 	function cleanupSubscription(observer) {
@@ -307,6 +325,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function cleanupFromSubscription(subscription) {
+		// TODO:  Should we get the method out and apply it here, instead of
+		// looking up the method at call time?
 		return function (_) {
 			subscription.unsubscribe();
 		};
@@ -318,6 +338,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 		// The observer must be an object
 		if (Object(observer) !== observer) throw new TypeError("Observer must be an object");
+
+		// TODO: Should we check for a "next" method here?
 
 		var subscriptionObserver = new SubscriptionObserver(observer),
 		    subscription = new Subscription(subscriptionObserver),
@@ -359,7 +381,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		this._cleanup = undefined;
 	}
 
-	SubscriptionObserver.prototype = nonEnum({
+	addMethods(SubscriptionObserver.prototype = {}, {
 
 		get closed() {
 			return subscriptionClosed(this);
@@ -453,105 +475,154 @@ return /******/ (function(modules) { // webpackBootstrap
 		this._observer = observer;
 	}
 
-	Subscription.prototype = nonEnum({
+	addMethods(Subscription.prototype = {}, {
 		unsubscribe: function unsubscribe() {
 			closeSubscription(this._observer);
 		}
 	});
 
-	var Observable = exports.Observable = (function () {
+	function Observable(subscriber) {
 
-		// == Fundamental ==
+		// The stream subscriber must be a function
+		if (typeof subscriber !== "function") throw new TypeError("Observable initializer must be a function");
 
-		function Observable(subscriber) {
-			_classCallCheck(this, Observable);
+		this._subscriber = subscriber;
+	}
 
-			// The stream subscriber must be a function
-			if (typeof subscriber !== "function") throw new TypeError("Observable initializer must be a function");
+	addMethods(Observable.prototype, {
+		subscribe: function subscribe(observer) {
 
-			this._subscriber = subscriber;
-		}
+			return createSubscription(observer, this._subscriber);
+		},
+		forEach: function forEach(fn) {
+			var _this = this;
 
-		_createClass(Observable, [{
-			key: "subscribe",
-			value: function subscribe(observer) {
+			return new Promise(function (resolve, reject) {
 
-				return createSubscription(observer, this._subscriber);
-			}
-		}, {
-			key: "forEach",
-			value: function forEach(fn) {
-				var _this = this;
+				if (typeof fn !== "function") throw new TypeError(fn + " is not a function");
 
-				return new Promise(function (resolve, reject) {
+				_this.subscribe({
+					next: function next(value) {
 
-					if (typeof fn !== "function") throw new TypeError(fn + " is not a function");
-
-					_this.subscribe({
-						next: function next(value) {
-
-							try {
-								return fn(value);
-							} catch (e) {
-								reject(e);
-							}
-						},
-
-						error: reject,
-						complete: resolve
-					});
-				});
-			}
-		}, {
-			key: Symbol.observable,
-			value: function value() {
-				return this;
-			}
-		}], [{
-			key: "from",
-
-			// == Derived ==
-
-			value: function from(x) {
-
-				var C = typeof this === "function" ? this : Observable;
-
-				if (x == null) throw new TypeError(x + " is not an object");
-
-				var method = getMethod(x, Symbol.observable);
-
-				if (method) {
-					var _ret2 = (function () {
-
-						var observable = method.call(x);
-
-						if (Object(observable) !== observable) throw new TypeError(observable + " is not an object");
-
-						if (observable.constructor === C) return {
-								v: observable
-							};
-
-						return {
-							v: new C(function (observer) {
-								return observable.subscribe(observer);
-							})
-						};
-					})();
-
-					if ((typeof _ret2 === "undefined" ? "undefined" : _typeof(_ret2)) === "object") return _ret2.v;
-				}
-
-				// TODO: Should we check for a Symbol.iterator method here?
-
-				return new C(function (observer) {
-
-					enqueueJob(function (_) {
-
-						if (observer.closed) return;
-
-						// Assume that the object is iterable.  If not, then the observer
-						// will receive an error.
 						try {
+							return fn(value);
+						} catch (e) {
+							reject(e);
+						}
+					},
+
+					error: reject,
+					complete: resolve
+				});
+			});
+		},
+		map: function map(fn) {
+			var _this2 = this;
+
+			if (typeof fn !== "function") throw new TypeError(fn + " is not a function");
+
+			var C = getSpecies(this.constructor);
+
+			return new C(function (observer) {
+				return _this2.subscribe({
+					next: function next(value) {
+
+						try {
+							value = fn(value);
+						} catch (e) {
+							return observer.error(e);
+						}
+
+						return observer.next(value);
+					},
+					error: function error(value) {
+						return observer.error(value);
+					},
+					complete: function complete(value) {
+						return observer.complete(value);
+					}
+				});
+			});
+		},
+		filter: function filter(fn) {
+			var _this3 = this;
+
+			if (typeof fn !== "function") throw new TypeError(fn + " is not a function");
+
+			var C = getSpecies(this.constructor);
+
+			return new C(function (observer) {
+				return _this3.subscribe({
+					next: function next(value) {
+
+						try {
+							if (!fn(value)) return undefined;
+						} catch (e) {
+							return observer.error(e);
+						}
+
+						return observer.next(value);
+					},
+					error: function error(value) {
+						return observer.error(value);
+					},
+					complete: function complete(value) {
+						return observer.complete(value);
+					}
+				});
+			});
+		}
+	});
+
+	Object.defineProperty(Observable.prototype, getSymbol("observable"), {
+		value: function value() {
+			return this;
+		},
+		writable: true,
+		configurable: true
+	});
+
+	addMethods(Observable, {
+		from: function from(x) {
+
+			var C = typeof this === "function" ? this : Observable;
+
+			if (x == null) throw new TypeError(x + " is not an object");
+
+			var method = getMethod(x, getSymbol("observable"));
+
+			if (method) {
+				var _ret2 = (function () {
+
+					var observable = method.call(x);
+
+					if (Object(observable) !== observable) throw new TypeError(observable + " is not an object");
+
+					if (observable.constructor === C) return {
+							v: observable
+						};
+
+					return {
+						v: new C(function (observer) {
+							return observable.subscribe(observer);
+						})
+					};
+				})();
+
+				if ((typeof _ret2 === "undefined" ? "undefined" : _typeof(_ret2)) === "object") return _ret2.v;
+			}
+
+			return new C(function (observer) {
+
+				enqueueJob(function (_) {
+
+					if (observer.closed) return;
+
+					// Assume that the object is iterable.  If not, then the observer
+					// will receive an error.
+					try {
+
+						if (hasSymbol("iterator")) {
 							var _iteratorNormalCompletion = true;
 							var _didIteratorError = false;
 							var _iteratorError = undefined;
@@ -579,53 +650,62 @@ return /******/ (function(modules) { // webpackBootstrap
 									}
 								}
 							}
-						} catch (e) {
+						} else {
 
-							// If observer.next throws an error, then the subscription will
-							// be closed and the error method will simply rethrow
-							observer.error(e);
-							return;
+							if (!Array.isArray(x)) throw new Error(x + " is not an Array");
+
+							for (var i = 0; i < x.length; ++i) {
+
+								observer.next(x[i]);
+
+								if (observer.closed) return;
+							}
 						}
+					} catch (e) {
 
-						observer.complete();
-					});
+						// If observer.next throws an error, then the subscription will
+						// be closed and the error method will simply rethrow
+						observer.error(e);
+						return;
+					}
+
+					observer.complete();
 				});
+			});
+		},
+		of: function of() {
+			for (var _len = arguments.length, items = Array(_len), _key = 0; _key < _len; _key++) {
+				items[_key] = arguments[_key];
 			}
-		}, {
-			key: "of",
-			value: function of() {
-				for (var _len = arguments.length, items = Array(_len), _key = 0; _key < _len; _key++) {
-					items[_key] = arguments[_key];
-				}
 
-				var C = typeof this === "function" ? this : Observable;
+			var C = typeof this === "function" ? this : Observable;
 
-				return new C(function (observer) {
+			return new C(function (observer) {
 
-					enqueueJob(function (_) {
+				enqueueJob(function (_) {
+
+					if (observer.closed) return;
+
+					for (var i = 0; i < items.length; ++i) {
+
+						observer.next(items[i]);
 
 						if (observer.closed) return;
+					}
 
-						for (var i = 0; i < items.length; ++i) {
-
-							observer.next(items[i]);
-
-							if (observer.closed) return;
-						}
-
-						observer.complete();
-					});
+					observer.complete();
 				});
-			}
-		}, {
-			key: Symbol.species,
-			get: function get() {
-				return this;
-			}
-		}]);
+			});
+		}
+	});
 
-		return Observable;
-	})();
+	Object.defineProperty(Observable, getSymbol("species"), {
+		get: function get() {
+			return this;
+		},
+
+		configurable: true
+	});
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(3)))
 
 /***/ },

@@ -1,11 +1,10 @@
 /**
- * Observable.js from zenparsing/es-observable.
+ * Observable.js from zenparsing/zen-observable
  *
  * @copyright © zenparsing
- * @homepage https://github.com/zenparsing/es-observable
- * @file https://github.com/zenparsing/es-observable/blob/bed0248bf84818bbda26c051f156e51ab9f7671e/src/Observable.js
+ * @homepage https://github.com/zenparsing/zen-observable
+ * @file https://github.com/zenparsing/zen-observable/blob/de80d63fb166421226bb3c918b111cac40bd672a/src/Observable.js
  */
-
 // === Non-Promise Job Queueing ===
 
 const enqueueJob = (function() {
@@ -58,22 +57,28 @@ const enqueueJob = (function() {
 
 function polyfillSymbol(name) {
 
-	if (!Symbol[name])
+	if (symbolsSupported() && !Symbol[name])
 		Object.defineProperty(Symbol, name, { value: Symbol(name) });
+}
+
+function symbolsSupported() {
+
+	return typeof Symbol === "function";
+}
+
+function hasSymbol(name) {
+
+	return symbolsSupported() && Boolean(Symbol[name]);
+}
+
+function getSymbol(name) {
+
+	return hasSymbol(name) ? Symbol[name] : "@@" + name;
 }
 
 polyfillSymbol("observable");
 
 // === Abstract Operations ===
-
-function nonEnum(obj) {
-
-	Object.getOwnPropertyNames(obj).forEach(k => {
-		Object.defineProperty(obj, k, { enumerable: false });
-	});
-
-	return obj;
-}
 
 function getMethod(obj, key) {
 
@@ -86,6 +91,22 @@ function getMethod(obj, key) {
 		throw new TypeError(value + " is not a function");
 
 	return value;
+}
+
+function getSpecies(ctor) {
+
+	let symbol = getSymbol("species");
+	return symbol ? ctor[symbol] : ctor;
+}
+
+function addMethods(target, methods) {
+
+	Object.keys(methods).forEach(k => {
+
+		let desc = Object.getOwnPropertyDescriptor(methods, k);
+		desc.enumerable = false;
+		Object.defineProperty(target, k, desc);
+	});
 }
 
 function cleanupSubscription(observer) {
@@ -120,6 +141,8 @@ function closeSubscription(observer) {
 }
 
 function cleanupFromSubscription(subscription) {
+	// TODO:  Should we get the method out and apply it here, instead of
+	// looking up the method at call time?
 	return _=> { subscription.unsubscribe() };
 }
 
@@ -130,6 +153,8 @@ function createSubscription(observer, subscriber) {
 	// The observer must be an object
 	if (Object(observer) !== observer)
 		throw new TypeError("Observer must be an object");
+
+	// TODO: Should we check for a "next" method here?
 
 	let subscriptionObserver = new SubscriptionObserver(observer),
 	    subscription = new Subscription(subscriptionObserver),
@@ -178,7 +203,7 @@ function SubscriptionObserver(observer) {
 	this._cleanup = undefined;
 }
 
-SubscriptionObserver.prototype = nonEnum({
+addMethods(SubscriptionObserver.prototype = {}, {
 
 	get closed() { return subscriptionClosed(this) },
 
@@ -272,27 +297,25 @@ function Subscription(observer) {
 	this._observer = observer;
 }
 
-Subscription.prototype = nonEnum({
+addMethods(Subscription.prototype = {}, {
 	unsubscribe() { closeSubscription(this._observer) }
 });
 
-export class Observable {
+export function Observable(subscriber) {
 
-	// == Fundamental ==
+	// The stream subscriber must be a function
+	if (typeof subscriber !== "function")
+		throw new TypeError("Observable initializer must be a function");
 
-	constructor(subscriber) {
+	this._subscriber = subscriber;
+}
 
-		// The stream subscriber must be a function
-		if (typeof subscriber !== "function")
-			throw new TypeError("Observable initializer must be a function");
-
-		this._subscriber = subscriber;
-	}
+addMethods(Observable.prototype, {
 
 	subscribe(observer) {
 
 		return createSubscription(observer, this._subscriber);
-	}
+	},
 
 	forEach(fn) {
 
@@ -313,22 +336,70 @@ export class Observable {
 				complete: resolve,
 			});
 		});
-	}
+	},
 
-	[Symbol.observable]() { return this }
+	map(fn) {
 
-	static get [Symbol.species]() { return this }
+		if (typeof fn !== "function")
+			throw new TypeError(fn + " is not a function");
 
-	// == Derived ==
+		let C = getSpecies(this.constructor);
 
-	static from(x) {
+		return new C(observer => this.subscribe({
+
+			next(value) {
+
+				try { value = fn(value) }
+				catch (e) { return observer.error(e) }
+
+				return observer.next(value);
+			},
+
+			error(value) { return observer.error(value) },
+			complete(value) { return observer.complete(value) },
+		}));
+	},
+
+	filter(fn) {
+
+		if (typeof fn !== "function")
+			throw new TypeError(fn + " is not a function");
+
+		let C = getSpecies(this.constructor);
+
+		return new C(observer => this.subscribe({
+
+			next(value) {
+
+				try { if (!fn(value)) return undefined; }
+				catch (e) { return observer.error(e) }
+
+				return observer.next(value);
+			},
+
+			error(value) { return observer.error(value) },
+			complete(value) { return observer.complete(value) },
+		}));
+	},
+
+});
+
+Object.defineProperty(Observable.prototype, getSymbol("observable"), {
+	value: function() { return this },
+	writable: true,
+	configurable: true,
+});
+
+addMethods(Observable, {
+
+	from(x) {
 
 		let C = typeof this === "function" ? this : Observable;
 
 		if (x == null)
 			throw new TypeError(x + " is not an object");
 
-		let method = getMethod(x, Symbol.observable);
+		let method = getMethod(x, getSymbol("observable"));
 
 		if (method) {
 
@@ -343,8 +414,6 @@ export class Observable {
 			return new C(observer => observable.subscribe(observer));
 		}
 
-		// TODO: Should we check for a Symbol.iterator method here?
-
 		return new C(observer => {
 
 			enqueueJob(_=> {
@@ -356,12 +425,28 @@ export class Observable {
 				// will receive an error.
 				try {
 
-					for (let item of x) {
+					if (hasSymbol("iterator")) {
 
-						observer.next(item);
+						for (let item of x) {
 
-						if (observer.closed)
-							return;
+							observer.next(item);
+
+							if (observer.closed)
+								return;
+						}
+
+					} else {
+
+						if (!Array.isArray(x))
+							throw new Error(x + " is not an Array");
+
+						for (let i = 0; i < x.length; ++i) {
+
+							observer.next(x[i]);
+
+							if (observer.closed)
+								return;
+						}
 					}
 
 				} catch (e) {
@@ -375,9 +460,9 @@ export class Observable {
 				observer.complete();
 			});
 		});
-	}
+	},
 
-	static of(...items) {
+	of(...items) {
 
 		let C = typeof this === "function" ? this : Observable;
 
@@ -399,6 +484,11 @@ export class Observable {
 				observer.complete();
 			});
 		});
-	}
+	},
 
-}
+});
+
+Object.defineProperty(Observable, getSymbol("species"), {
+	get() { return this },
+	configurable: true,
+});
