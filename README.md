@@ -1,93 +1,49 @@
-![](http://i.imgur.com/X3JE4Ev.png?1)
+# fetchObservable
 
-[View live demo](https://edealer.nl/react-transmit/) 
-
-# React Transmit
-
-[Relay](https://facebook.github.io/relay/)-inspired library based on Promises instead of GraphQL.
-
-Inspired by: [Building the Facebook Newsfeed with Relay](http://facebook.github.io/react/blog/2015/03/19/building-the-facebook-news-feed-with-relay.html) (React blog)
+Observable-based [Fetch API](https://github.com/whatwg/fetch) that automatically refreshes data.
 
 ## Features
 
-- API similar to the official Relay API, adapted for Promises.
-- Higher-order Component (HoC) syntax is great for functional-style React.
-- Composable Promise-based queries using fragments.
-- Isomorphic architecture supports server-side rendering.
-- Also works with React Native!
+- API similar to the standard Fetch API.
+- Uses Observable syntax from [ES Observable proposal](https://github.com/zenparsing/es-observable).
+- Runs in Node and browsers.
 
 ## Installation
 
 ```bash
 	# For web or Node:
-	npm install react-transmit
-	
-	# For React Native:
-	npm install react-transmit-native
+	npm install --save fetch-observable
 ```
 
 ## Usage
 
-**Newsfeed.js** (read the comments)
-
 ````js
-import React    from "react";
-import Transmit from "react-transmit";  // Import Transmit.
-import Story    from "./Story";
+import fetchObservable from "fetch-observable";
 
-const Newsfeed = React.createClass({
-	render () {
-		const {stories} = this.props;  // Fragments are guaranteed.
+// Creates a single fetchObservable for one or multiple URLs.
+const liveFeed = fetchObservable(
+	"http://example.org/live-feed.json",
+	{refreshDelay (iteration) { return iteration * 1000; }}
+);
 
-		return stories.map((story) => <Story story={story} />);
-	}
-});
-
-// Higher-order component that will fetch data for the above React component.
-export default Transmit.createContainer(Newsfeed, {
-	initialVariables: {
-		count: 10  // Default variable.
+// Subscribe-syntax like ES Observables.
+const subscription1 = liveFeed.subscribe({
+	next (response) {
+		console.dir(response.json());
 	},
-	fragments: {
-		// Fragment names become the Transmit prop names.
-		stories ({count}) {
-			// This "stories" query returns a Promise composed of 3 other Promises.
-			return Promise.all([
-				Story.getFragment("story", {storyId: 1}),
-				Story.getFragment("story", {storyId: 2}),
-				Story.getFragment("story", {storyId: 3})
-			]);
-		}
+	error (error) {
+		console.warn(error.stack || error);
 	}
 });
+
+// Multiple subscriptions allowed.
+const subscription2 = liveFeed.subscribe({next () {}});
+
+subscription1.unsubscribe();
+subscription2.unsubscribe(); // <-- Observable pauses on 0 subscriptions.
+
+subscription1.resubscribe(); // <-- Observable resumes on 1 subscription.
 ````
-**Story.js** (read the comments)
-
-````js
-import React    from "react";
-import Transmit from "react-transmit";  // Import Transmit.
-
-const Story = React.createClass({
-	render () {
-		const {story} = this.props; // Fragments are guaranteed.
-		
-		return <p>{story.content}</p>;
-	}
-});
-
-export default Transmit.createContainer(Story, {
-	fragments: {
-		// This "story" fragment returns a Fetch API promise.
-		story ({storyId}) {
-			return fetch("https://some.api/stories/" + storyId).then((res) => res.json());
-		}
-	}
-});
-````
-
-## Documentation
-
-See [DOCS.md](https://github.com/RickWong/react-transmit/blob/master/DOCS.md)
 
 ## Community
 

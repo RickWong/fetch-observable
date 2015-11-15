@@ -1,8 +1,9 @@
 /**
- * Observable.js by zenparsing
+ * Observable.js from zenparsing/es-observable.
  *
+ * @copyright © zenparsing
  * @homepage https://github.com/zenparsing/es-observable
- * @source https://github.com/zenparsing/es-observable/blob/bed0248bf84818bbda26c051f156e51ab9f7671e/src/Observable.js
+ * @file https://github.com/zenparsing/es-observable/blob/bed0248bf84818bbda26c051f156e51ab9f7671e/src/Observable.js
  */
 
 // === Non-Promise Job Queueing ===

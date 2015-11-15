@@ -35,15 +35,26 @@ class PausableObservable extends Observable {
 		return this.state === "paused";
 	}
 
-	subscribe (...args) {
-		let subscription = super.subscribe(...args);
+	subscribe (observer) {
+		let subscription = super.subscribe(observer);
 		let _this = this;
 
 		/**
-		 * Add method that to know if the subscription is active.
+		 * Add method to know if the subscription is active.
 		 */
 		subscription.active = function () {
 			return this._observer !== undefined && !_this.paused();
+		};
+
+		/**
+		 * Add method that re-activates this observable.
+		 */
+		subscription.resubscribe = function () {
+			if (this.active()) {
+				return false;
+			}
+
+			return _this.subscribe(observer);
 		};
 
 		return subscription;

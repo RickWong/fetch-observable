@@ -15,7 +15,7 @@ let subscriptions = {};
 function toggleFetching (index) {
 	if (subscriptions[index]) {
 		subscriptions[index].unsubscribe();
-		subscriptions[index] = undefined;
+		subscriptions[index].resubscribe();
 	}
 	else {
 		subscriptions[index] = observable.subscribe({

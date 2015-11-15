@@ -22,6 +22,7 @@ function fetchObservable (urls, options = {}) {
 	let subscribers  = [];
 	let timeout      = null;
 	let singleResult = false;
+	let iteration = 0;
 
 	if (singleResult = isString(urls)) {
 		urls = [urls];
@@ -45,7 +46,7 @@ function fetchObservable (urls, options = {}) {
 			else {
 				timeout = setTimeout(
 					performFetch,
-					isFunction(refreshDelay) ? refreshDelay() : refreshDelay
+					isFunction(refreshDelay) ? refreshDelay(iteration++) : refreshDelay
 				);
 			}
 		};
