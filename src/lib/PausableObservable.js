@@ -1,12 +1,12 @@
 /**
  * @copyright © 2015, Rick Wong. All rights reserved.
  */
-import {Observable} from "lib/Observable";
+import BetterObservable from "lib/BetterObservable";
 
 /**
  * An Observable that can be paused and resumed.
  */
-class PausableObservable extends Observable {
+class PausableObservable extends BetterObservable {
 	constructor (subscriber, options = {}) {
 		super(subscriber);
 
@@ -34,46 +34,30 @@ class PausableObservable extends Observable {
 		return this;
 	}
 
-	paused () {
-		return this.state === "paused";
+	getState () {
+		return this.state;
 	}
 
-	subscribe (observer) {
-		let subscription = super.subscribe(observer);
-		let _this = this;
+	paused () {
+		return this.getState() === "paused";
+	}
 
-		/**
-		 * Add method to know if the subscription is active.
-		 */
-		subscription.active = function () {
-			if (_this.paused()) {
-				return false;
-			}
+	/**
+	 * Overrides zen-observable's map() to support pause(), resume(), paused() and getState().
+	 *
+	 * @param {Function} callback
+	 * @returns {PausableObservable|BetterObservable|Observable}
+	 */
+	map (callback) {
+		const pausableObservable = super.map(callback);
 
-			if (this._observer === undefined) {
-				return false;
-			}
+		Object.assign(pausableObservable, {
+			options: this.options,
+			getState: () => this.getState()
+		});
 
-			if (this._observer._observer === undefined) {
-				return false;
-			}
-
-			return true;
-		};
-
-		/**
-		 * Add method that re-activates the subscription.
-		 */
-		subscription.resubscribe = function () {
-			if (this.active()) {
-				return;
-			}
-
-			Object.assign(this, _this.subscribe(observer));
-		};
-
-		return subscription;
+		return pausableObservable;
 	}
 }
 
-export default PausableObservable;
+module.exports = PausableObservable;

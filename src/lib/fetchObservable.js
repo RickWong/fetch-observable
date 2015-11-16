@@ -21,7 +21,7 @@ function isFunction (thing) {
 function fetchObservable (urls, options = {}) {
 	const {refreshDelay = false} = options;
 
-	let subscribers  = [];
+	let observers    = [];
 	let timeout      = null;
 	let singleResult = false;
 	let iteration = 0;
@@ -31,18 +31,18 @@ function fetchObservable (urls, options = {}) {
 	}
 
 	const performFetch = function () {
-		// Don't do anything if there are no subscribers.
-		if (subscribers.length === 0 ||
+		// Don't do anything if there are no observers.
+		if (observers.length === 0 ||
 		    observable.paused()) {
 			return;
 		}
 
 		const _finally = function () {
-			// If refreshing is disabled, complete subscribers and pause observable.
+			// If refreshing is disabled, complete observers and pause observable.
 			if (!refreshDelay) {
 				observable.pause();
-				subscribers.map(subscriber => subscriber.complete());
-				subscribers = [];
+				observers.map((observer) => observer.complete());
+				observers = [];
 			}
 			// If refreshing is enabled, set a timeout.
 			else {
@@ -54,26 +54,26 @@ function fetchObservable (urls, options = {}) {
 		};
 
 		// Map all URLs to Fetch API calls.
-		let fetches = urls.map(url => fetch(url, options));
+		let fetches = urls.map((url) => fetch(url, options));
 
-		// Wait for all the results to come in, then notify subscribers.
+		// Wait for all the results to come in, then notify observers.
 		Promise.all(fetches).then(function (results) {
-			subscribers.map(subscriber => subscriber.next(singleResult ? results[0] : results));
+			observers.map((observer) => observer.next(singleResult ? results[0] : results));
 			_finally();
-		}).catch(function (results) {
-			subscribers.map(subscriber => subscriber.error(singleResult ? results[0] : results));
+		}).catch(function (error) {
+			observers.map((observer) => observer.error(error));
 			_finally();
 		});
 	};
 
-	const observable = new PausableObservable(function (subscriber) {
-		subscribers.push(subscriber);
+	const observable = new PausableObservable(function (observer) {
+		observers.push(observer);
 		observable.resume();
 
 		return function () {
-			subscribers.splice(subscribers.indexOf(subscriber), 1);
+			observers.splice(observers.indexOf(observer), 1);
 
-			if (!subscribers.length) {
+			if (!observers.length) {
 				observable.pause();
 			}
 		};

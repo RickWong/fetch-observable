@@ -6,47 +6,60 @@ import fetchObservable from "lib/fetchObservable";
 import React from "react";
 import ReactDOM from "react-dom";
 
-let observable = fetchObservable(
-	"http://api.openweathermap.org/data/2.5/weather?q=London,uk&appid=2de143494c0b295cca9337e1e96b00e0",
-	{
-		refreshDelay: 1500
-	}
-);
+try {
+	let observable = fetchObservable(
+		"http://api.openweathermap.org/data/2.5/weather?q=London,uk&appid=2de143494c0b295cca9337e1e96b00e0",
+		{
+			refreshDelay: 1500
+		}
+	).map(a=>a).map(a=>a).map(a=>a).map(a=>a).map(a=>a).map((response) => response.json());
 
-let subscriptions = {};
+	let subscriptions = {};
 
-function toggleFetching (index) {
-	if (subscriptions[index] && subscriptions[index].active()) {
-		subscriptions[index].unsubscribe();
+	function toggleFetching (index) {
+		if (subscriptions[index] && subscriptions[index].active()) {
+			subscriptions[index].unsubscribe();
+		}
+		//else if (subscriptions[index]) {
+		//	subscriptions[index].resubscribe();
+		//}
+		else {
+			subscriptions[index] = observable.subscribe({
+				next:     (...args) => {
+					console.log(`subscriptions[${index}] next:`, ...args);
+				},
+				error:    (...args) => {
+					console.warn(`subscriptions[${index}] error:`, ...args);
+				},
+				complete: () => {
+					console.log(`subscriptions[${index}] complete`);
+					toggleFetching(index);
+				}
+			});
+		}
+
+		render();
 	}
-	else if (subscriptions[index]) {
-		subscriptions[index].resubscribe();
-	}
-	else {
-		subscriptions[index] = observable.subscribe({
-			next: (...args) => {console.log(`subscriptions[${index}] next:`, ...args);},
-			error: (...args) => {console.warn(`subscriptions[${index}] error:`, ...args);},
-			complete: () => {console.log(`subscriptions[${index}] complete`); toggleFetching(index);}
-		});
+
+	function render () {
+		ReactDOM.render(
+			<center>
+				<br />
+				<br />
+				<button key="A" onClick={toggleFetching.bind(null, "A")}>
+					{subscriptions.A && subscriptions.A.active() ? "X Stop" : "√ Start"} fetching
+				</button>
+				<button key="B" onClick={toggleFetching.bind(null, "B")}>
+					{subscriptions.B && subscriptions.B.active() ? "X Stop" : "√ Start"} fetching
+				</button>
+			</center>,
+			document.getElementById("react-root")
+		);
 	}
 
 	render();
 }
-
-function render () {
-	ReactDOM.render(
-		<center>
-			<br />
-			<br />
-			<button key="A" onClick={toggleFetching.bind(null, "A")}>
-				{subscriptions.A && subscriptions.A.active() ? "X Stop" : "√ Start"} fetching
-			</button>
-			<button key="B" onClick={toggleFetching.bind(null, "B")}>
-				{subscriptions.B && subscriptions.B.active() ? "X Stop" : "√ Start"} fetching
-			</button>
-		</center>,
-		document.getElementById("react-root")
-	);
+catch (error)
+{
+	console.warn(error);
 }
-
-render();
