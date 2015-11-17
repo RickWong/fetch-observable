@@ -56,7 +56,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 
-	var _PausableObservable = __webpack_require__(2);
+	var _PausableObservable = __webpack_require__(3);
 
 	var _PausableObservable2 = _interopRequireDefault(_PausableObservable);
 
@@ -84,7 +84,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		var _options$refreshDelay = options.refreshDelay;
 		var refreshDelay = _options$refreshDelay === undefined ? false : _options$refreshDelay;
 
-		var subscribers = [];
+		var observers = [];
 		var timeout = null;
 		var singleResult = false;
 		var iteration = 0;
@@ -94,19 +94,19 @@ return /******/ (function(modules) { // webpackBootstrap
 		}
 
 		var performFetch = function performFetch() {
-			// Don't do anything if there are no subscribers.
-			if (subscribers.length === 0 || observable.paused()) {
+			// Don't do anything if there are no observers.
+			if (observers.length === 0 || observable.paused()) {
 				return;
 			}
 
 			var _finally = function _finally() {
-				// If refreshing is disabled, complete subscribers and pause observable.
+				// If refreshing is disabled, complete observers and pause observable.
 				if (!refreshDelay) {
 					observable.pause();
-					subscribers.map(function (subscriber) {
-						return subscriber.complete();
+					observers.map(function (observer) {
+						return observer.complete();
 					});
-					subscribers = [];
+					observers = [];
 				}
 				// If refreshing is enabled, set a timeout.
 				else {
@@ -119,28 +119,28 @@ return /******/ (function(modules) { // webpackBootstrap
 				return fetch(url, options);
 			});
 
-			// Wait for all the results to come in, then notify subscribers.
+			// Wait for all the results to come in, then notify observers.
 			Promise.all(fetches).then(function (results) {
-				subscribers.map(function (subscriber) {
-					return subscriber.next(singleResult ? results[0] : results);
+				observers.map(function (observer) {
+					return observer.next(singleResult ? results[0] : results);
 				});
 				_finally();
-			}).catch(function (results) {
-				subscribers.map(function (subscriber) {
-					return subscriber.error(singleResult ? results[0] : results);
+			}).catch(function (error) {
+				observers.map(function (observer) {
+					return observer.error(error);
 				});
 				_finally();
 			});
 		};
 
-		var observable = new _PausableObservable2.default(function (subscriber) {
-			subscribers.push(subscriber);
+		var observable = new _PausableObservable2.default(function (observer) {
+			observers.push(observer);
 			observable.resume();
 
 			return function () {
-				subscribers.splice(subscribers.indexOf(subscriber), 1);
+				observers.splice(observers.indexOf(observer), 1);
 
-				if (!subscribers.length) {
+				if (!observers.length) {
 					observable.pause();
 				}
 			};
@@ -165,6 +165,122 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	var _Observable2 = __webpack_require__(2);
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; } /**
+	                                                                                                                              * @copyright © 2015, Rick Wong. All rights reserved.
+	                                                                                                                              */
+
+	function isPromise(thing) {
+		return (typeof thing === "undefined" ? "undefined" : _typeof(thing)) === "object" && typeof thing["then"] === "function" && typeof thing["catch"] === "function";
+	}
+
+	var BetterObservable = (function (_Observable) {
+		_inherits(BetterObservable, _Observable);
+
+		function BetterObservable() {
+			_classCallCheck(this, BetterObservable);
+
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(BetterObservable).apply(this, arguments));
+		}
+
+		_createClass(BetterObservable, [{
+			key: "map",
+			value: function map(callback) {
+				var _this2 = this;
+
+				if (typeof callback !== "function") {
+					throw new TypeError(callback + " is not a function");
+				}
+
+				var parentSubscription = null;
+				var childObservers = [];
+
+				var createParentSubscription = function createParentSubscription() {
+					if (parentSubscription) {
+						return;
+					}
+
+					parentSubscription = _this2.subscribe({
+						next: function next(value) {
+							try {
+								value = callback(value);
+							} catch (e) {
+								return childObservers.map(function (o) {
+									return o.error(e);
+								});
+							}
+
+							// Support Promises.
+							if (isPromise(value)) {
+								return value.then(function (v) {
+									return childObservers.map(function (o) {
+										return o.next(v);
+									});
+								}).catch(function (e) {
+									return childObservers.map(function (o) {
+										return o.error(e);
+									});
+								});
+							}
+
+							childObservers.map(function (o) {
+								return o.next(value);
+							});
+						},
+
+						error: function error(e) {
+							return childObservers.map(function (o) {
+								return o.error(e);
+							});
+						},
+						complete: function complete() {
+							return childObservers.map(function (o) {
+								return o.complete();
+							});
+						}
+					});
+				};
+
+				var destroyParentSubscription = function destroyParentSubscription() {
+					parentSubscription && parentSubscription.unsubscribe();
+					parentSubscription = null;
+				};
+
+				return new this.constructor(function (observer) {
+					childObservers.push(observer);
+					createParentSubscription();
+
+					return function () {
+						childObservers.splice(childObservers.indexOf(observer), 1);
+
+						if (!childObservers.length) {
+							destroyParentSubscription();
+						}
+					};
+				});
+			}
+		}]);
+
+		return BetterObservable;
+	})(_Observable2.Observable);
+
+	module.exports = BetterObservable;
+
+/***/ },
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {"use strict";
@@ -703,10 +819,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 		configurable: true
 	});
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(3)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(4)))
 
 /***/ },
-/* 2 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -715,11 +831,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
+	var _BetterObservable2 = __webpack_require__(1);
 
-	var _Observable2 = __webpack_require__(1);
+	var _BetterObservable3 = _interopRequireDefault(_BetterObservable2);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -729,23 +845,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                * @copyright © 2015, Rick Wong. All rights reserved.
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                */
 
-	/**
-	 * An Observable that can be paused and resumed.
-	 */
-
-	var PausableObservable = (function (_Observable) {
-		_inherits(PausableObservable, _Observable);
+	var PausableObservable = (function (_BetterObservable) {
+		_inherits(PausableObservable, _BetterObservable);
 
 		function PausableObservable(subscriber) {
-			var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+			var _ref = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+			var onPause = _ref.onPause;
+			var onResume = _ref.onResume;
 
 			_classCallCheck(this, PausableObservable);
 
-			var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(PausableObservable).call(this, subscriber));
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(PausableObservable).call(this, subscriber));
 
-			_this2.options = options;
-			_this2.state = "paused";
-			return _this2;
+			_this.state = "paused";
+
+			_this.onPause = onPause;
+			_this.onResume = onResume;
+			return _this;
 		}
 
 		_createClass(PausableObservable, [{
@@ -753,30 +870,14 @@ return /******/ (function(modules) { // webpackBootstrap
 			value: function pause() {
 				this.state = "paused";
 
-				if (this.options.onPause) {
-					for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-						args[_key] = arguments[_key];
-					}
-
-					this.options.onPause.apply(this, args);
-				}
-
-				return this;
+				return this.onPause && this.onPause.apply(this, arguments);
 			}
 		}, {
 			key: "resume",
 			value: function resume() {
 				this.state = "resumed";
 
-				if (this.options.onResume) {
-					for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-						args[_key2] = arguments[_key2];
-					}
-
-					this.options.onResume.apply(this, args);
-				}
-
-				return this;
+				return this.onResume && this.onResume.apply(this, arguments);
 			}
 		}, {
 			key: "paused",
@@ -784,52 +885,36 @@ return /******/ (function(modules) { // webpackBootstrap
 				return this.state === "paused";
 			}
 		}, {
-			key: "subscribe",
-			value: function subscribe(observer) {
-				var subscription = _get(Object.getPrototypeOf(PausableObservable.prototype), "subscribe", this).call(this, observer);
-				var _this = this;
+			key: "map",
+			value: function map(callback) {
+				var _this2 = this;
 
-				/**
-	    * Add method to know if the subscription is active.
-	    */
-				subscription.active = function () {
-					if (_this.paused()) {
-						return false;
+				var pausableObservable = _get(Object.getPrototypeOf(PausableObservable.prototype), "map", this).call(this, callback);
+
+				// Child observable must track parent's state, so bind its onPause, onResume, and paused.
+				Object.assign(pausableObservable, {
+					onPause: function onPause() {
+						return _this2.onPause.apply(_this2, arguments);
+					},
+					onResume: function onResume() {
+						return _this2.onResume.apply(_this2, arguments);
+					},
+					paused: function paused() {
+						return _this2.paused();
 					}
+				});
 
-					if (this._observer === undefined) {
-						return false;
-					}
-
-					if (this._observer._observer === undefined) {
-						return false;
-					}
-
-					return true;
-				};
-
-				/**
-	    * Add method that re-activates the subscription.
-	    */
-				subscription.resubscribe = function () {
-					if (this.active()) {
-						return;
-					}
-
-					Object.assign(this, _this.subscribe(observer));
-				};
-
-				return subscription;
+				return pausableObservable;
 			}
 		}]);
 
 		return PausableObservable;
-	})(_Observable2.Observable);
+	})(_BetterObservable3.default);
 
-	exports.default = PausableObservable;
+	module.exports = PausableObservable;
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports) {
 
 	// shim for using process in browser

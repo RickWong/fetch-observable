@@ -16,13 +16,13 @@ try {
 
 	let subscriptions = {};
 
+	global.o = observable;
+
 	function toggleFetching (index) {
-		if (subscriptions[index] && subscriptions[index].active()) {
+		if (subscriptions[index]) {
 			subscriptions[index].unsubscribe();
+			delete subscriptions[index];
 		}
-		//else if (subscriptions[index]) {
-		//	subscriptions[index].resubscribe();
-		//}
 		else {
 			subscriptions[index] = observable.subscribe({
 				next:     (...args) => {
@@ -47,10 +47,10 @@ try {
 				<br />
 				<br />
 				<button key="A" onClick={toggleFetching.bind(null, "A")}>
-					{subscriptions.A && subscriptions.A.active() ? "X Stop" : "√ Start"} fetching
+					{subscriptions.A ? "X Stop" : "√ Start"} fetching
 				</button>
 				<button key="B" onClick={toggleFetching.bind(null, "B")}>
-					{subscriptions.B && subscriptions.B.active() ? "X Stop" : "√ Start"} fetching
+					{subscriptions.B ? "X Stop" : "√ Start"} fetching
 				</button>
 			</center>,
 			document.getElementById("react-root")
@@ -61,5 +61,5 @@ try {
 }
 catch (error)
 {
-	console.warn(error);
+	throw error;
 }

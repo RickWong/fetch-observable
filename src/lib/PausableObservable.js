@@ -3,57 +3,40 @@
  */
 import BetterObservable from "lib/BetterObservable";
 
-/**
- * An Observable that can be paused and resumed.
- */
 class PausableObservable extends BetterObservable {
-	constructor (subscriber, options = {}) {
+	constructor (subscriber, {onPause, onResume} = {}) {
 		super(subscriber);
 
-		this.options = options;
-		this.state   = "paused";
+		this.state = "paused";
+
+		this.onPause  = onPause;
+		this.onResume = onResume;
 	}
 
 	pause (...args) {
 		this.state = "paused";
 
-		if (this.options.onPause) {
-			this.options.onPause.apply(this, args);
-		}
-
-		return this;
+		return this.onPause && this.onPause(...args);
 	}
 
 	resume (...args) {
 		this.state = "resumed";
 
-		if (this.options.onResume) {
-			this.options.onResume.apply(this, args);
-		}
-
-		return this;
-	}
-
-	getState () {
-		return this.state;
+		return this.onResume && this.onResume(...args);
 	}
 
 	paused () {
-		return this.getState() === "paused";
+		return this.state === "paused";
 	}
 
-	/**
-	 * Overrides zen-observable's map() to support pause(), resume(), paused() and getState().
-	 *
-	 * @param {Function} callback
-	 * @returns {PausableObservable|BetterObservable|Observable}
-	 */
 	map (callback) {
 		const pausableObservable = super.map(callback);
 
+		// Child observable must track parent's state, so bind its onPause, onResume, and paused.
 		Object.assign(pausableObservable, {
-			options: this.options,
-			getState: () => this.getState()
+			onPause: (...args) => this.onPause(...args),
+			onResume: (...args) => this.onResume(...args),
+			paused: () => this.paused()
 		});
 
 		return pausableObservable;

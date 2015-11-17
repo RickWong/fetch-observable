@@ -26,9 +26,9 @@ const liveFeed = fetchObservable(
 		refreshDelay: (iteration) => iteration * 1000, // <-- Callback or just integer ms.
 		method: "POST" // <-- Basic Fetch API options.
 	}
-);
+).map((response) => response.json()); // map() resolves Promises.
 
-// Subscribe-syntax of ES Observables.
+// Subscribe-syntax of ES Observables activates the observable.
 const subscription1 = liveFeed.subscribe({
 	next (response) {
 		console.dir(response.json());
@@ -38,16 +38,17 @@ const subscription1 = liveFeed.subscribe({
 	}
 });
 
-// Multiple subscriptions allowed.
+// Multiple subscriptions allowed. They all get the result.
 const subscription2 = liveFeed.subscribe({next () {}});
 
-subscription1.unsubscribe();
-subscription2.unsubscribe(); // <-- Observable pauses on 0 subscriptions.
-
-subscription1.resubscribe(); // <-- Observable resumes on 1 subscription.
-
-liveFeed.pause(); // <-- Observable can be paused manually.
+// Observable can be paused and resumed manually.
+liveFeed.pause();
 liveFeed.resume();
+
+// Observable will be paused automatically when no subscriptions left.
+subscription1.unsubscribe();
+subscription2.unsubscribe();
+
 ````
 
 ## Community
