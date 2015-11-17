@@ -32,10 +32,10 @@ class PausableObservable extends BetterObservable {
 	map (callback) {
 		const pausableObservable = super.map(callback);
 
-		// Child observable must track parent's state, so bind its onPause, onResume, and paused.
+		// Child observable must track parent's state, so bind its pause, resume, and paused.
 		Object.assign(pausableObservable, {
-			onPause: (...args) => this.onPause(...args),
-			onResume: (...args) => this.onResume(...args),
+			pause: (...args) => this.pause(...args),
+			resume: (...args) => this.resume(...args),
 			paused: () => this.paused()
 		});
 

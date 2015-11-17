@@ -891,13 +891,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				var pausableObservable = _get(Object.getPrototypeOf(PausableObservable.prototype), "map", this).call(this, callback);
 
-				// Child observable must track parent's state, so bind its onPause, onResume, and paused.
+				// Child observable must track parent's state, so bind its pause, resume, and paused.
 				Object.assign(pausableObservable, {
-					onPause: function onPause() {
-						return _this2.onPause.apply(_this2, arguments);
+					pause: function pause() {
+						return _this2.pause.apply(_this2, arguments);
 					},
-					onResume: function onResume() {
-						return _this2.onResume.apply(_this2, arguments);
+					resume: function resume() {
+						return _this2.resume.apply(_this2, arguments);
 					},
 					paused: function paused() {
 						return _this2.paused();
