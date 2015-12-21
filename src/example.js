@@ -8,8 +8,7 @@ import ReactDOM from "react-dom";
 
 try {
 	let observable = fetchObservable(
-		"http://api.openweathermap.org/data/2.5/weather?q=London,uk&appid=2de143494c0b295cca9337e1e96b00e0",
-		{
+		"http://api.openweathermap.org/data/2.5/weather?q=London,uk&appid=2de143494c0b295cca9337e1e96b00e0", {
 			refreshDelay: 1500
 		}
 	).map(a=>a).map(a=>a).map(a=>a).map(a=>a).map(a=>a).map((response) => response.json());

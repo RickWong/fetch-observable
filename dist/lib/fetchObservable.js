@@ -114,9 +114,11 @@ return /******/ (function(modules) { // webpackBootstrap
 					}
 			};
 
+			var fetchFunc = options.fetch || fetch;
+
 			// Map all URLs to Fetch API calls.
 			var fetches = urls.map(function (url) {
-				return fetch(url, options);
+				return fetchFunc(url, options);
 			});
 
 			// Wait for all the results to come in, then notify observers.

@@ -23,6 +23,7 @@ import fetchObservable from "fetch-observable";
 const liveFeed = fetchObservable(
 	"http://example.org/live-feed.json", // <-- URL or array of URLs.
 	{
+		fetch: fetch,  // <-- Replacable fetch implementation.
 		refreshDelay: (iteration) => iteration * 1000, // <-- Callback or just integer ms.
 		method: "POST" // <-- Basic Fetch API options.
 	}

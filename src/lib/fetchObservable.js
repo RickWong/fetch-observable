@@ -53,8 +53,10 @@ function fetchObservable (urls, options = {}) {
 			}
 		};
 
+		const fetchFunc = options.fetch || fetch;
+
 		// Map all URLs to Fetch API calls.
-		let fetches = urls.map((url) => fetch(url, options));
+		let fetches = urls.map((url) => fetchFunc(url, options));
 
 		// Wait for all the results to come in, then notify observers.
 		Promise.all(fetches).then(function (results) {
