@@ -20,6 +20,7 @@ function isFunction (thing) {
  */
 function fetchObservable (urls, options = {}) {
 	const {refreshDelay = false} = options;
+	const fetchFunc = options.fetch || fetch;
 
 	let observers    = [];
 	let timeout      = null;
@@ -53,10 +54,10 @@ function fetchObservable (urls, options = {}) {
 			}
 		};
 
-		const fetchFunc = options.fetch || fetch;
-
 		// Map all URLs to Fetch API calls.
-		let fetches = urls.map((url) => fetchFunc(url, options));
+		let fetches = urls.map(
+			(url) => fetchFunc(url, {...options, refreshDelay: undefined, fetch: undefined})
+		);
 
 		// Wait for all the results to come in, then notify observers.
 		Promise.all(fetches).then(function (results) {

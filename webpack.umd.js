@@ -17,7 +17,7 @@ module.exports = {
 		loaders: [
 			{test: /\.json$/, loaders: ["json"]},
 			{test:       /\.js$/,
-				loaders: ["babel?cacheDirectory&presets[]=es2015&presets[]=react"],
+				loaders: ["babel?cacheDirectory&presets[]=es2015&presets[]=stage-0"],
 				exclude: /node_modules/
 			}
 		],

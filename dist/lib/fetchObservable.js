@@ -56,6 +56,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; /**
+	                                                                                                                                                                                                                                                                   * @copyright © 2015, Rick Wong. All rights reserved.
+	                                                                                                                                                                                                                                                                   */
+
 	var _PausableObservable = __webpack_require__(3);
 
 	var _PausableObservable2 = _interopRequireDefault(_PausableObservable);
@@ -64,9 +68,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function isString(thing) {
 		return typeof thing === "string";
-	} /**
-	   * @copyright © 2015, Rick Wong. All rights reserved.
-	   */
+	}
 
 	function isFunction(thing) {
 		return typeof thing === "function";
@@ -83,6 +85,8 @@ return /******/ (function(modules) { // webpackBootstrap
 		var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 		var _options$refreshDelay = options.refreshDelay;
 		var refreshDelay = _options$refreshDelay === undefined ? false : _options$refreshDelay;
+
+		var fetchFunc = options.fetch || fetch;
 
 		var observers = [];
 		var timeout = null;
@@ -114,11 +118,9 @@ return /******/ (function(modules) { // webpackBootstrap
 					}
 			};
 
-			var fetchFunc = options.fetch || fetch;
-
 			// Map all URLs to Fetch API calls.
 			var fetches = urls.map(function (url) {
-				return fetchFunc(url, options);
+				return fetchFunc(url, _extends({}, options, { refreshDelay: undefined, fetch: undefined }));
 			});
 
 			// Wait for all the results to come in, then notify observers.
