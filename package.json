@@ -33,7 +33,7 @@
     "json-loader": "0.5.4",
     "react": "0.14.3",
     "react-dom": "0.14.3",
-    "webpack": "1.12.9",
+    "webpack": "1.15.0",
     "webpack-dev-server": "1.14.0"
   },
   "engines": {
